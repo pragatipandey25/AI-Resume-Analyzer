@@ -38,20 +38,13 @@ const Upload = () => {
                 return uploadedImage.path;
             })();
 
-            const feedbackPromise = (async () => {
-                try {
-                    const result = await ai.feedback(
-                        uploadedFile.path,
-                        prepareInstructions({ jobTitle, jobDescription })
-                    );
-                    return result;
-                } catch (feedbackError) {
-                    console.error('AI Feedback Error:', feedbackError);
-                    throw new Error(`AI analysis failed: ${feedbackError instanceof Error ? feedbackError.message : 'Unknown error'}`);
-                }
-            })();
+            const imagePath = await imageUploadPromise;
 
-            const [imagePath, feedback] = await Promise.all([imageUploadPromise, feedbackPromise]);
+            const feedback = await ai.feedback(
+                imagePath,
+                prepareInstructions({ jobTitle, jobDescription })
+            );
+
             if (!feedback) throw new Error('Failed to analyze resume - no feedback received');
 
             const feedbackText = typeof feedback.message?.content === 'string'
@@ -65,6 +58,12 @@ const Upload = () => {
                 throw new Error('Failed to parse AI response - invalid format');
             }
 
+            const cleanedFeedbackText = feedbackText
+                .trim()
+                .replace(/^```json\s*/i, '')
+                .replace(/^```\s*/i, '')
+                .replace(/\s*```$/i, '');
+
             const uuid = generateUUID();
             const data = {
                 id: uuid,
@@ -73,7 +72,7 @@ const Upload = () => {
                 companyName,
                 jobTitle,
                 jobDescription,
-                feedback: JSON.parse(feedbackText),
+                feedback: JSON.parse(cleanedFeedbackText),
             };
 
             setStatusText('Saving analysis...');
@@ -82,7 +81,9 @@ const Upload = () => {
             navigate(`/resume/${uuid}`);
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Something went wrong during analysis';
-            console.error('Full error:', error);
+            console.error('[Upload] Full error:', error);
+            console.error('[Upload] Error stack:', error instanceof Error ? error.stack : 'N/A');
+            console.error('[Upload] Error type:', typeof error, Object.prototype.toString.call(error));
             setStatusText(`Error: ${message}`);
             setIsProcessing(false);
             setFile(null);
@@ -142,7 +143,7 @@ const Upload = () => {
 
                             <div className="form-div">
                                 <label htmlFor="uploader">Upload Resume</label>
-                                <FileUploader onFileSelect={handleFileSelect} />
+                                <FileUploader selectedFile={file} onFileSelect={handleFileSelect} />
                             </div>
 
                             <button className="primary-button" type="submit">

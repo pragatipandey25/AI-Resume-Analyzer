@@ -334,24 +334,46 @@ export const usePuterStore = create<PuterStore>((set, get) => {
             return;
         }
 
-        return puter.ai.chat(
-            [
-                {
-                    role: "user",
-                    content: [
-                        {
-                            type: "file",
-                            puter_path: path,
-                        },
-                        {
-                            type: "text",
-                            text: message,
-                        },
-                    ],
-                },
-            ],
-            { model: "claude-3-7-sonnet" }
-        ) as Promise<AIResponse | undefined>;
+        try {
+            console.log("[AI Feedback] Starting feedback analysis for:", path);
+            
+            const resumeBlob = await puter.fs.read(path);
+            if (!resumeBlob) {
+                throw new Error("Failed to read resume image from storage - blob is null");
+            }
+            console.log("[AI Feedback] Image blob loaded, size:", resumeBlob.size);
+            
+            const extractedText = await puter.ai.img2txt(resumeBlob);
+            if (!extractedText || !extractedText.trim()) {
+                throw new Error("Failed to extract text from resume image - OCR returned empty result");
+            }
+            console.log("[AI Feedback] OCR extraction successful, text length:", extractedText.length);
+            
+            const combinedPrompt = `${message}\n\nResume text extracted from the uploaded image:\n${extractedText}`;
+            console.log("[AI Feedback] Sending prompt to model (length: " + combinedPrompt.length + ")");
+            
+            const chatResponse = await puter.ai.chat(
+                [
+                    {
+                        role: "user",
+                        content: combinedPrompt,
+                    },
+                ],
+                undefined,
+                undefined,
+                { model: "claude-3-7-sonnet" }
+            );
+            
+            if (!chatResponse) {
+                throw new Error("AI chat returned null or undefined response");
+            }
+            console.log("[AI Feedback] Chat response received:", chatResponse);
+            
+            return chatResponse as AIResponse;
+        } catch (err) {
+            console.error("[AI Feedback] Error during feedback analysis:", err);
+            throw err;
+        }
     };
 
     const img2txt = async (image: string | File | Blob, testMode?: boolean) => {

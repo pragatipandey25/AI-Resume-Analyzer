@@ -20,14 +20,12 @@ const WipeApp = () => {
         if (!isLoading && !auth.isAuthenticated) {
             navigate("/auth?next=/wipe");
         }
-    }, [isLoading]);
+    }, [auth.isAuthenticated, isLoading, navigate]);
 
     const handleDelete = async () => {
-        files.forEach(async (file) => {
-            await fs.delete(file.path);
-        });
+        await Promise.all(files.map((file) => fs.delete(file.path)));
         await kv.flush();
-        loadFiles();
+        await loadFiles();
     };
 
     if (isLoading) {
