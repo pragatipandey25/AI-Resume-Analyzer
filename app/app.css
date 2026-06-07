@@ -332,6 +332,10 @@ form {
     @apply shrink-0;
   }
 
+  .navbar-logout-button {
+    @apply inline-flex items-center justify-center rounded-full border border-gray-200 bg-white/85 font-semibold text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-white hover:text-gray-900 hover:shadow-sm;
+  }
+
   .navbar-user-pill {
     @apply inline-flex items-center gap-3 rounded-full border border-white/80 bg-white/70 px-4 py-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)];
   }

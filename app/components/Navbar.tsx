@@ -1,10 +1,11 @@
 import {useEffect, useMemo, useState} from "react";
-import {Link, useLocation} from "react-router";
+import {Link, useLocation, useNavigate} from "react-router";
 import {usePuterStore} from "~/lib/puter";
 
 const Navbar = () => {
     const { auth } = usePuterStore();
     const location = useLocation();
+    const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
 
     useEffect(() => {
@@ -40,6 +41,12 @@ const Navbar = () => {
         return hash ? location.hash === `#${hash}` : true;
     };
     const userInitial = auth.user?.username?.charAt(0).toUpperCase() ?? "U";
+
+    const handleLogout = async () => {
+        await auth.signOut();
+        setMenuOpen(false);
+        navigate("/");
+    };
 
     return (
         <nav className="navbar-shell">
@@ -77,6 +84,13 @@ const Navbar = () => {
                             <Link to="/upload" className="primary-button navbar-cta px-5 py-3 text-base">
                                 {isHome ? "Upload Resume" : "Open Upload"}
                             </Link>
+                            <button
+                                type="button"
+                                className="navbar-logout-button navbar-cta px-5 py-3 text-base"
+                                onClick={handleLogout}
+                            >
+                                Log Out
+                            </button>
                         </>
                     ) : (
                         <>
@@ -130,6 +144,13 @@ const Navbar = () => {
                                 <Link to="/upload" className="primary-button navbar-cta w-full px-5 py-3 text-base">
                                     {isHome ? "Upload Resume" : "Open Upload"}
                                 </Link>
+                                <button
+                                    type="button"
+                                    className="navbar-logout-button navbar-cta w-full px-5 py-3 text-base"
+                                    onClick={handleLogout}
+                                >
+                                    Log Out
+                                </button>
                             </>
                         ) : (
                             <>
